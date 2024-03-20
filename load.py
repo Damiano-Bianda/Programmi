@@ -15,25 +15,45 @@ se ogni giornata scelgo vincente le prime in classifica (per numero di punti)'''
 
 result = {}
 
-for match_day_index in range(1, season.match_days_count):
-    match_day = season.get_match_day(match_day_index - 1)
-    match_day_ranking = match_day.get_ordered_match_day_ranking()
+for match_day_index in range(10, season.match_days_count):
+
+    ranking_pre_match_day = season.get_ranking(match_day_index - 1)
     first_ranks = []
-    
-    max_points = match_day_ranking[0].points
-    for rank in match_day_ranking:
-        if rank.points == max_points:
-            first_ranks.add(rank)
+    max_points = ranking_pre_match_day[0]['points']
+    for rank in ranking_pre_match_day:
+        if rank['points'] == max_points:
+            first_ranks.append(rank)
         else:
             break
-
+        
+    match_day = season.get_match_day(match_day_index)
     for rank in first_ranks:
-        team_id = rank.team_id
-        match_result = match_day.get_match_result(rank.team_id)
-        if team_id == match_result.get_winner_team_id():
-            bet_count = result[team_id]
-            if bet_count:
-                result[team_id].win = bet_count.win + 1
-                result[team_id].total = bet_count.total + 1
-            else:
-                result[team_id] = {win: 0, total: 1}
+        team_id = rank['team_id']
+        
+        try:
+            if not match_day.is_match_finished(team_id):
+                continue
+        except Exception as e:
+            print(e)
+            continue
+        
+        try:
+            match_result = match_day.get_match_result(rank['team_id'])
+        except Exception as e:
+            print(e)
+            continue
+        
+        if team_id not in result:
+            result[team_id] ={'win': 0, 'draw':0, 'lost':0, 'total': 0}
+
+        if match_result.has_won(team_id):
+            result[team_id]['win'] = result[team_id]['win'] + 1
+        elif match_result.has_drawn(team_id):
+            result[team_id]['draw'] = result[team_id]['draw'] + 1
+        elif match_result.has_lost(team_id):
+            result[team_id]['lost'] = result[team_id]['lost'] + 1
+        
+        result[team_id]['total'] = result[team_id]['total'] + 1
+
+#print(result)
+print(json.dumps(result, indent=4))
